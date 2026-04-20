@@ -94,6 +94,47 @@ function getWeekDays(
   return result;
 }
 
+/** "1/2" や "1" などの文字列を数値に変換 */
+function parseNum(s: string): number | null {
+  const frac = s.match(/^(\d+)\/(\d+)$/);
+  if (frac) return parseInt(frac[1]) / parseInt(frac[2]);
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+/** 数値を見やすい分数・整数に戻す（例: 0.5→"1/2", 2.5→"2と1/2"） */
+function formatNum(n: number): string {
+  const whole = Math.floor(n);
+  const frac = n - whole;
+  const FRACS: [number, string][] = [[1/4,'1/4'],[1/3,'1/3'],[1/2,'1/2'],[2/3,'2/3'],[3/4,'3/4']];
+  const matched = FRACS.find(([v]) => Math.abs(frac - v) < 0.01);
+  if (matched) return whole > 0 ? `${whole}と${matched[1]}` : matched[1];
+  if (n === Math.floor(n)) return String(n);
+  return String(Math.round(n * 10) / 10);
+}
+
+/** "1個・2個・1個" → "4個" のように単位ごとに合算 */
+function sumAmounts(amounts: string[]): string {
+  if (amounts.length === 1) return amounts[0];
+  // "数値+単位" の形に分解して合算を試みる
+  const parsed: { num: number; unit: string }[] = [];
+  for (const a of amounts) {
+    const m = a.match(/^(\d+(?:\/\d+)?)\s*(.*)$/);
+    if (!m) return amounts.join('・'); // 解析不能なものが1つでもあれば諦める
+    const num = parseNum(m[1]);
+    if (num === null) return amounts.join('・');
+    parsed.push({ num, unit: m[2].trim() });
+  }
+  // 単位ごとに集計
+  const byUnit: Record<string, number> = {};
+  for (const { num, unit } of parsed) {
+    byUnit[unit] = (byUnit[unit] ?? 0) + num;
+  }
+  return Object.entries(byUnit)
+    .map(([unit, total]) => `${formatNum(total)}${unit}`)
+    .join('・');
+}
+
 function buildShoppingItems(weekDays: ResolvedDay[]): { name: string; amount: string }[] {
   const items: Record<string, string[]> = {};
 
@@ -114,7 +155,7 @@ function buildShoppingItems(weekDays: ResolvedDay[]): { name: string; amount: st
   });
 
   return Object.entries(items)
-    .map(([name, amounts]) => ({ name, amount: amounts.join('・') }))
+    .map(([name, amounts]) => ({ name, amount: sumAmounts(amounts) }))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
 }
 
