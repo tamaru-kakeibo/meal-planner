@@ -5,12 +5,13 @@ import {
   MEALS, SIDES, SOUPS, FRUITS, MONTHLY_PLAN, CATEGORY_CONFIG, STAPLES,
   Meal, Side, Soup, DayPlan, ShoppingItem,
 } from '@/lib/meals';
-import { loadPlan, savePlan, weekKey } from '@/lib/storage';
+import { loadPlan, savePlan, weekKey, loadShoppingChecked, saveShoppingChecked } from '@/lib/storage';
 
 const MONTH_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const DOW_JP   = ['日','月','火','水','木','金','土'];
 const DOW_FULL = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
 const WEEKDAYS = [1, 2, 3, 4, 5];
+const SERVINGS = 4; // 我が家の人数
 
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() &&
@@ -133,6 +134,12 @@ export default function Page() {
   useEffect(() => { setPlan(loadPlan()); }, []);
 
   const selectedWeek = getWeekOfMonth(selectedDate);
+  const shoppingWeekId = `${viewY}-${viewM}-w${selectedWeek}`;
+
+  // 週が変わったらチェック状態をlocalStorageから復元
+  useEffect(() => {
+    setShoppingChecked(loadShoppingChecked(shoppingWeekId));
+  }, [shoppingWeekId]);
 
   const weekDays = useMemo(
     () => getWeekDays(viewY, viewM, selectedWeek, plan),
@@ -177,12 +184,7 @@ export default function Page() {
             <p className="text-xs text-stone-500">平日5日の夕飯、AIが考えます</p>
           </div>
           <button
-            onClick={() => {
-              const checked: Record<string, boolean> = {};
-              shoppingItems.forEach(i => { checked[i.name] = false; });
-              setShoppingChecked(checked);
-              setShowShopping(s => !s);
-            }}
+            onClick={() => setShowShopping(s => !s)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-xs font-medium hover:bg-orange-200 transition-colors"
           >
             🛒 今週の買い物リスト
@@ -309,7 +311,7 @@ export default function Page() {
             <div className="px-5 py-4 border-b border-orange-100 flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 className="text-sm font-medium text-stone-800">🛒 今週の買い物リスト</h3>
-                <p className="text-xs text-stone-400 mt-0.5">調味料・常備品は除いています</p>
+                <p className="text-xs text-stone-400 mt-0.5">{SERVINGS}人分・調味料など常備品は除外済み</p>
               </div>
               <button onClick={() => setShowShopping(false)} className="text-xs text-stone-400">閉じる</button>
             </div>
@@ -321,7 +323,11 @@ export default function Page() {
                   <input
                     type="checkbox"
                     checked={shoppingChecked[item.name] ?? false}
-                    onChange={() => setShoppingChecked(prev => ({ ...prev, [item.name]: !prev[item.name] }))}
+                    onChange={() => {
+                      const next = { ...shoppingChecked, [item.name]: !shoppingChecked[item.name] };
+                      setShoppingChecked(next);
+                      saveShoppingChecked(shoppingWeekId, next);
+                    }}
                     className="w-4 h-4 rounded accent-orange-500"
                   />
                   <span className={`text-sm flex-1 ${shoppingChecked[item.name] ? 'line-through text-stone-300' : 'text-stone-700'}`}>
@@ -332,7 +338,7 @@ export default function Page() {
               ))}
             </div>
             <div className="px-5 py-3 border-t border-orange-100 flex-shrink-0">
-              <p className="text-xs text-stone-400 text-center">チェックは閉じるとリセットされます</p>
+              <p className="text-xs text-stone-400 text-center">チェックはこの週分が保存されます</p>
             </div>
           </div>
         </div>
@@ -382,7 +388,10 @@ export default function Page() {
 
               <div className="bg-orange-50 rounded-xl px-4 py-3">
                 <p className="text-xs text-stone-500">この日の合計カロリー（1人分）</p>
-                <p className="text-2xl font-bold text-orange-500 mt-0.5">{detailTarget.totalCalories} <span className="text-sm font-normal text-stone-400">kcal</span></p>
+                <p className="text-2xl font-bold text-orange-500 mt-0.5">
+                  {detailTarget.totalCalories} <span className="text-sm font-normal text-stone-400">kcal</span>
+                </p>
+                <p className="text-xs text-stone-400 mt-1">{SERVINGS}人分の材料でお作りください</p>
               </div>
             </div>
           </div>
