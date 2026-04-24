@@ -1,6 +1,54 @@
 export type MealCategory = 'fish' | 'chicken' | 'pork' | 'beef' | 'egg' | 'other';
 export type SideCategory = 'vegetable' | 'tofu' | 'seaweed' | 'other';
 export type SoupCategory = 'miso' | 'clear' | 'western';
+export type FamilyType = 'adults_only' | 'with_children';
+
+export interface FamilySettings {
+  servings: number;    // 2〜5人
+  familyType: FamilyType;
+}
+
+export const DEFAULT_FAMILY: FamilySettings = {
+  servings: 3,
+  familyType: 'adults_only',
+};
+
+// 基準人数（レシピの分量はこの人数を基準に書かれている）
+export const BASE_SERVINGS = 3;
+
+/** 分量文字列を人数に合わせてスケールする */
+export function scaleAmount(amount: string, toServings: number): string {
+  if (toServings === BASE_SERVINGS) return amount;
+  const ratio = toServings / BASE_SERVINGS;
+
+  // "少量" "適量" など数値なしはそのまま
+  if (/^[^\d]/.test(amount) || amount === '少量' || amount === '適量') return amount;
+
+  // "数値/数値" の分数を含む文字列をパース
+  const m = amount.match(/^(\d+)(?:\/(\d+))?\s*(.*)$/);
+  if (!m) return amount;
+
+  const num = m[2] ? parseInt(m[1]) / parseInt(m[2]) : parseFloat(m[1]);
+  const unit = m[3].trim();
+  const scaled = num * ratio;
+
+  // 整数が自然な単位はceil
+  const wholeUnits = new Set(['切れ', '個', '枚', '束', '袋', '缶', '丁', '箱', 'かけ', '本']);
+  if (wholeUnits.has(unit)) {
+    return `${Math.ceil(scaled)}${unit}`;
+  }
+
+  // g / ml は10単位に丸める
+  if (unit === 'g' || unit === 'ml') {
+    const rounded = Math.round(scaled / 10) * 10;
+    return `${rounded}${unit}`;
+  }
+
+  // その他は小数点1桁
+  const rounded = Math.round(scaled * 2) / 2; // 0.5刻み
+  if (rounded === Math.floor(rounded)) return `${rounded}${unit}`;
+  return `${rounded}${unit}`;
+}
 
 // 常備品（買い物リストから除外）
 export const STAPLES = new Set([
@@ -21,9 +69,10 @@ export interface Meal {
   category: MealCategory;
   cookingMinutes: number;
   calories: number;         // 1人分kcal
-  shopping: ShoppingItem[]; // 常備品以外の食材+分量
+  shopping: ShoppingItem[]; // 常備品以外の食材+分量（BASE_SERVINGS人分）
   steps: string[];          // 作り方
   tip?: string;
+  childFriendly: boolean;   // 子供向けかどうか
 }
 
 export interface Side {
@@ -55,139 +104,139 @@ export interface Fruit {
 
 export const MEALS: Record<string, Meal> = {
   f1: {
-    id: 'f1', name: '鮭の塩焼き', category: 'fish', cookingMinutes: 15, calories: 180,
+    id: 'f1', name: '鮭の塩焼き', category: 'fish', cookingMinutes: 15, calories: 180, childFriendly: true,
     shopping: [{ name: '鮭', amount: '3切れ' }, { name: 'レモン', amount: '1/2個' }],
     steps: ['鮭に塩を振って10分おく', '水気を拭いてフライパンで中火5分・裏返して4分焼く', 'レモンを添えて完成'],
     tip: 'クッキングシートを敷くとくっつかず後片付けが楽。',
   },
   f2: {
-    id: 'f2', name: 'さばの味噌煮', category: 'fish', cookingMinutes: 25, calories: 220,
+    id: 'f2', name: 'さばの味噌煮', category: 'fish', cookingMinutes: 25, calories: 220, childFriendly: true,
     shopping: [{ name: 'さば', amount: '3切れ' }, { name: 'しょうが', amount: '1かけ' }],
     steps: ['さばに熱湯をかけて臭みを取る', '鍋に水・酒・砂糖・みりん・味噌を合わせて煮立てる', 'さばを入れて落し蓋をして15分煮る'],
     tip: '煮汁が少なくなったら完成の合図。高齢者にも食べやすい。',
   },
   f3: {
-    id: 'f3', name: 'ぶりの照り焼き', category: 'fish', cookingMinutes: 20, calories: 250,
+    id: 'f3', name: 'ぶりの照り焼き', category: 'fish', cookingMinutes: 20, calories: 250, childFriendly: true,
     shopping: [{ name: 'ぶり', amount: '3切れ' }],
     steps: ['ぶりを醤油・みりん・酒で10分漬ける', 'フライパンに油を熱し中火で両面を焼く', '漬けタレを加えて照りが出るまで煮詰める'],
     tip: '照りが出たら火が通ったサイン。',
   },
   f4: {
-    id: 'f4', name: '鮭のムニエル', category: 'fish', cookingMinutes: 15, calories: 210,
+    id: 'f4', name: '鮭のムニエル', category: 'fish', cookingMinutes: 15, calories: 210, childFriendly: true,
     shopping: [{ name: '鮭', amount: '3切れ' }, { name: 'レモン', amount: '1個' }],
     steps: ['鮭に塩こしょうして薄力粉をまぶす', 'バターを溶かしたフライパンで中火5分・裏返して4分焼く', 'レモン汁をかけて完成'],
     tip: 'バターが焦げないよう中火をキープ。',
   },
   f5: {
-    id: 'f5', name: 'たらの煮付け', category: 'fish', cookingMinutes: 20, calories: 150,
+    id: 'f5', name: 'たらの煮付け', category: 'fish', cookingMinutes: 20, calories: 150, childFriendly: true,
     shopping: [{ name: 'たら', amount: '3切れ' }, { name: 'しょうが', amount: '1かけ' }],
     steps: ['鍋に水・醤油・みりん・酒・砂糖・しょうがを入れ煮立てる', 'たらを入れて落し蓋をして10分煮る', '煮汁を回しかけながら仕上げる'],
     tip: 'たらはやわらかいので煮崩れに注意。高齢者にぴったり。',
   },
   c1: {
-    id: 'c1', name: '鶏の照り焼き', category: 'chicken', cookingMinutes: 20, calories: 280,
+    id: 'c1', name: '鶏の照り焼き', category: 'chicken', cookingMinutes: 20, calories: 280, childFriendly: true,
     shopping: [{ name: '鶏もも肉', amount: '400g' }],
     steps: ['鶏肉を醤油・みりん・酒で10分漬ける', 'フライパンで皮目から中火で焼く（7分）', '裏返して蓋をして5分蒸し焼き・タレを加え照りを出す'],
     tip: '蓋をして蒸し焼きにすると中までふっくら仕上がる。',
   },
   c2: {
-    id: 'c2', name: '親子丼', category: 'chicken', cookingMinutes: 15, calories: 420,
+    id: 'c2', name: '親子丼', category: 'chicken', cookingMinutes: 15, calories: 420, childFriendly: true,
     shopping: [{ name: '鶏もも肉', amount: '300g' }, { name: '玉ねぎ', amount: '1個' }, { name: '卵', amount: '4個' }],
     steps: ['鶏肉と玉ねぎをだし・醤油・みりんで煮る', '溶き卵を2回に分けて回しかける', '半熟で火を止めてごはんにのせる'],
     tip: '卵は半熟がベスト。最後に入れたらすぐ蓋をする。',
   },
   c3: {
-    id: 'c3', name: '鶏肉と野菜の煮物', category: 'chicken', cookingMinutes: 25, calories: 260,
+    id: 'c3', name: '鶏肉と野菜の煮物', category: 'chicken', cookingMinutes: 25, calories: 260, childFriendly: true,
     shopping: [{ name: '鶏もも肉', amount: '300g' }, { name: 'じゃがいも', amount: '3個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '1個' }],
     steps: ['鶏肉と野菜を一口大に切る', '鍋に油を熱し鶏肉を炒め、野菜を加える', 'だし・醤油・みりん・砂糖を加えて15分煮る'],
     tip: 'じゃがいもがやわらかくなれば完成。高齢者も食べやすい。',
   },
   c4: {
-    id: 'c4', name: '鶏肉の塩レモン炒め', category: 'chicken', cookingMinutes: 20, calories: 240,
+    id: 'c4', name: '鶏肉の塩レモン炒め', category: 'chicken', cookingMinutes: 20, calories: 240, childFriendly: true,
     shopping: [{ name: '鶏むね肉', amount: '350g' }, { name: 'レモン', amount: '1個' }, { name: 'パプリカ', amount: '1個' }, { name: 'にんにく', amount: '1かけ' }],
     steps: ['鶏むね肉を薄切りにして塩こしょうをする', 'にんにくを炒めて鶏肉を加えて炒める', 'パプリカを加えてレモン汁をかけて完成'],
     tip: '薄切りにすると火が通りやすく柔らかく仕上がる。',
   },
   c5: {
-    id: 'c5', name: 'チキンソテー', category: 'chicken', cookingMinutes: 20, calories: 300,
+    id: 'c5', name: 'チキンソテー', category: 'chicken', cookingMinutes: 20, calories: 300, childFriendly: true,
     shopping: [{ name: '鶏もも肉', amount: '400g' }, { name: 'にんにく', amount: '1かけ' }],
     steps: ['鶏肉に塩こしょうをして常温に戻す', 'にんにくを炒めて香りを出す', '皮目からじっくり焼いてカリッとさせる・裏返して5分'],
     tip: '皮目をパリッと焼くのがポイント。蓋をしないで焼く。',
   },
   p1: {
-    id: 'p1', name: '豚の生姜焼き', category: 'pork', cookingMinutes: 15, calories: 320,
+    id: 'p1', name: '豚の生姜焼き', category: 'pork', cookingMinutes: 15, calories: 320, childFriendly: true,
     shopping: [{ name: '豚ロース', amount: '350g' }, { name: '玉ねぎ', amount: '1個' }, { name: 'しょうが', amount: '1かけ' }],
     steps: ['豚肉と玉ねぎをフライパンで炒める', '醤油・みりん・酒・しょうがを合わせたタレを加える', 'タレが絡んだら完成'],
     tip: 'しょうがは多めが美味しい。タレは最後に加えて手早く絡める。',
   },
   p2: {
-    id: 'p2', name: '豚肉と野菜の味噌炒め', category: 'pork', cookingMinutes: 20, calories: 280,
+    id: 'p2', name: '豚肉と野菜の味噌炒め', category: 'pork', cookingMinutes: 20, calories: 280, childFriendly: true,
     shopping: [{ name: '豚こま肉', amount: '300g' }, { name: 'キャベツ', amount: '1/4個' }, { name: 'もやし', amount: '1袋' }, { name: 'にんじん', amount: '1/2本' }],
     steps: ['野菜を食べやすい大きさに切る', '豚肉を炒めて火が通ったら野菜を加える', '味噌・みりん・酒を合わせたタレで炒め合わせる'],
     tip: 'キャベツはしっかり炒めてやわらかくすると高齢者も食べやすい。',
   },
   p3: {
-    id: 'p3', name: '肉じゃが（豚肉）', category: 'pork', cookingMinutes: 25, calories: 300,
+    id: 'p3', name: '肉じゃが（豚肉）', category: 'pork', cookingMinutes: 25, calories: 300, childFriendly: true,
     shopping: [{ name: '豚こま肉', amount: '250g' }, { name: 'じゃがいも', amount: '4個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '1個' }, { name: 'しらたき', amount: '1袋' }],
     steps: ['野菜を一口大、しらたきを食べやすく切る', '油で豚肉を炒め野菜を加える', 'だし・醤油・みりん・砂糖を加えて20分煮る'],
     tip: 'じゃがいもが煮崩れるくらい煮ると高齢者も食べやすい。',
   },
   p4: {
-    id: 'p4', name: '豚汁定食', category: 'pork', cookingMinutes: 20, calories: 250,
+    id: 'p4', name: '豚汁定食', category: 'pork', cookingMinutes: 20, calories: 250, childFriendly: true,
     shopping: [{ name: '豚こま肉', amount: '200g' }, { name: 'だいこん', amount: '1/3本' }, { name: 'にんじん', amount: '1本' }, { name: 'ごぼう', amount: '1/2本' }, { name: '豆腐', amount: '1丁' }],
     steps: ['野菜を乱切り、ごぼうはささがきにする', 'ごま油で豚肉と野菜を炒める', 'だしを加えてやわらかくなるまで煮て味噌を溶かす'],
     tip: 'ごぼうはやわらかく煮る。具だくさんで栄養満点。',
   },
   b1: {
-    id: 'b1', name: '牛丼', category: 'beef', cookingMinutes: 20, calories: 480,
+    id: 'b1', name: '牛丼', category: 'beef', cookingMinutes: 20, calories: 480, childFriendly: true,
     shopping: [{ name: '牛こま肉', amount: '300g' }, { name: '玉ねぎ', amount: '2個' }],
     steps: ['玉ねぎを薄切りにしてだしで煮る', '牛肉を加えて醤油・みりん・砂糖で味付け', '10分煮てごはんにのせる'],
     tip: '玉ねぎがとろとろになるまで煮ると美味しい。',
   },
   b2: {
-    id: 'b2', name: '肉じゃが（牛肉）', category: 'beef', cookingMinutes: 25, calories: 320,
+    id: 'b2', name: '肉じゃが（牛肉）', category: 'beef', cookingMinutes: 25, calories: 320, childFriendly: true,
     shopping: [{ name: '牛こま肉', amount: '250g' }, { name: 'じゃがいも', amount: '4個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '1個' }, { name: 'しらたき', amount: '1袋' }],
     steps: ['野菜を一口大に切る', '油で牛肉を炒め野菜を加える', 'だし・醤油・みりん・砂糖を加えて20分煮る'],
     tip: '牛肉の旨味がじゃがいもに染み込む定番料理。',
   },
   e1: {
-    id: 'e1', name: '麻婆豆腐', category: 'egg', cookingMinutes: 20, calories: 260,
+    id: 'e1', name: '麻婆豆腐', category: 'egg', cookingMinutes: 20, calories: 260, childFriendly: false,
     shopping: [{ name: '豚ひき肉', amount: '200g' }, { name: '木綿豆腐', amount: '2丁' }, { name: 'ねぎ', amount: '1本' }, { name: 'にんにく', amount: '1かけ' }, { name: 'しょうが', amount: '1かけ' }, { name: '豆板醤', amount: '少量' }],
     steps: ['にんにく・しょうがを炒めてひき肉を加える', 'だし・醤油・みりん・豆板醤を加えて煮立てる', '豆腐を加えて5分煮てねぎをちらす'],
     tip: '豆板醤は少量にすれば子どもも食べられる。',
   },
   e2: {
-    id: 'e2', name: '厚揚げの煮物', category: 'egg', cookingMinutes: 15, calories: 200,
+    id: 'e2', name: '厚揚げの煮物', category: 'egg', cookingMinutes: 15, calories: 200, childFriendly: true,
     shopping: [{ name: '厚揚げ', amount: '2枚' }, { name: 'だいこん', amount: '1/4本' }, { name: 'にんじん', amount: '1/2本' }],
     steps: ['厚揚げを食べやすく切る、野菜を乱切りにする', 'だし・醤油・みりん・酒を合わせて煮立てる', '全ての食材を入れて15分煮る'],
     tip: '厚揚げは栄養豊富でやわらかい。全年齢に食べやすい。',
   },
   e3: {
-    id: 'e3', name: 'オムライス', category: 'egg', cookingMinutes: 20, calories: 420,
+    id: 'e3', name: 'オムライス', category: 'egg', cookingMinutes: 20, calories: 420, childFriendly: true,
     shopping: [{ name: '卵', amount: '6個' }, { name: '鶏もも肉', amount: '200g' }, { name: '玉ねぎ', amount: '1個' }],
     steps: ['鶏肉と玉ねぎをバターで炒めケチャップライスを作る', '溶き卵2個を薄く焼く', 'ライスを包んで形を整えてケチャップをかける'],
     tip: '子どもに大人気。卵は薄く焼くのがコツ。',
   },
   o1: {
-    id: 'o1', name: 'ハンバーグ', category: 'other', cookingMinutes: 30, calories: 380,
+    id: 'o1', name: 'ハンバーグ', category: 'other', cookingMinutes: 30, calories: 380, childFriendly: true,
     shopping: [{ name: '合いびき肉', amount: '400g' }, { name: '玉ねぎ', amount: '1個' }, { name: '卵', amount: '1個' }],
     steps: ['玉ねぎをみじん切りにして炒めて冷ます', 'ひき肉・卵・パン粉・牛乳・塩こしょうと混ぜてこねる', '成形してフライパンで両面焼き・蓋をして5分蒸し焼き'],
     tip: '多めに作って冷凍しておくと便利。',
   },
   o2: {
-    id: 'o2', name: '豆腐ハンバーグ', category: 'other', cookingMinutes: 25, calories: 280,
+    id: 'o2', name: '豆腐ハンバーグ', category: 'other', cookingMinutes: 25, calories: 280, childFriendly: true,
     shopping: [{ name: '合いびき肉', amount: '300g' }, { name: '絹豆腐', amount: '1丁' }, { name: '玉ねぎ', amount: '1個' }, { name: '卵', amount: '1個' }],
     steps: ['豆腐を水切りしてひき肉・玉ねぎ・卵と混ぜる', '成形してフライパンで両面焼く', '醤油・みりんのタレをかける'],
     tip: '豆腐入りでやわらかく高齢者にも食べやすい。',
   },
   o3: {
-    id: 'o3', name: 'カレーライス', category: 'other', cookingMinutes: 30, calories: 500,
+    id: 'o3', name: 'カレーライス', category: 'other', cookingMinutes: 30, calories: 500, childFriendly: true,
     shopping: [{ name: '鶏もも肉', amount: '350g' }, { name: 'じゃがいも', amount: '3個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '2個' }, { name: 'カレールー', amount: '1箱' }],
     steps: ['野菜と鶏肉を切って炒める', '水を加えて野菜がやわらかくなるまで煮る', 'ルーを加えて10分煮込む'],
     tip: '多めに作ると翌日も食べられる。子どもに大人気。',
   },
   o4: {
-    id: 'o4', name: 'シチュー', category: 'other', cookingMinutes: 30, calories: 380,
+    id: 'o4', name: 'シチュー', category: 'other', cookingMinutes: 30, calories: 380, childFriendly: true,
     shopping: [{ name: '鶏もも肉', amount: '350g' }, { name: 'じゃがいも', amount: '3個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '1個' }, { name: 'シチュールー', amount: '1箱' }],
     steps: ['野菜と鶏肉を一口大に切る', '炒めてから水で15分煮る', 'ルーと牛乳を加えて5分煮る'],
     tip: '野菜がやわらかく高齢者にも食べやすい。',

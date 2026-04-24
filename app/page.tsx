@@ -3,15 +3,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   MEALS, SIDES, SOUPS, FRUITS, MONTHLY_PLAN, CATEGORY_CONFIG, STAPLES,
-  Meal, Side, Soup, DayPlan, ShoppingItem,
+  Meal, Side, Soup, DayPlan, ShoppingItem, FamilySettings, DEFAULT_FAMILY, scaleAmount,
 } from '@/lib/meals';
-import { loadPlan, savePlan, weekKey, loadShoppingChecked, saveShoppingChecked } from '@/lib/storage';
+import { loadPlan, savePlan, weekKey, loadShoppingChecked, saveShoppingChecked, loadFamilySettings, saveFamilySettings } from '@/lib/storage';
 
 const MONTH_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const DOW_JP   = ['日','月','火','水','木','金','土'];
 const DOW_FULL = ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
 const WEEKDAYS = [1, 2, 3, 4, 5];
-const SERVINGS = 4; // 我が家の人数
 
 function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() &&
@@ -135,13 +134,13 @@ function sumAmounts(amounts: string[]): string {
     .join('・');
 }
 
-function buildShoppingItems(weekDays: ResolvedDay[]): { name: string; amount: string }[] {
+function buildShoppingItems(weekDays: ResolvedDay[], servings: number): { name: string; amount: string }[] {
   const items: Record<string, string[]> = {};
 
   function add(si: ShoppingItem) {
     if (STAPLES.has(si.name)) return;
     if (!items[si.name]) items[si.name] = [];
-    items[si.name].push(si.amount);
+    items[si.name].push(scaleAmount(si.amount, servings));
   }
 
   weekDays.forEach(({ dayPlan }) => {
@@ -171,8 +170,16 @@ export default function Page() {
   const [shoppingChecked, setShoppingChecked] = useState<Record<string, boolean>>({});
   const [swapTarget, setSwapTarget] = useState<{ key: string; date: Date } | null>(null);
   const [detailTarget, setDetailTarget] = useState<ResolvedDay | null>(null);
+  const [family, setFamily] = useState<FamilySettings>(DEFAULT_FAMILY);
+  const [familyInput, setFamilyInput] = useState<FamilySettings>(DEFAULT_FAMILY);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  useEffect(() => { setPlan(loadPlan()); }, []);
+  useEffect(() => {
+    setPlan(loadPlan());
+    const f = loadFamilySettings();
+    setFamily(f);
+    setFamilyInput(f);
+  }, []);
 
   const selectedWeek = getWeekOfMonth(selectedDate);
   const shoppingWeekId = `${viewY}-${viewM}-w${selectedWeek}`;
@@ -187,7 +194,7 @@ export default function Page() {
     [viewY, viewM, selectedWeek, plan]
   );
 
-  const shoppingItems = useMemo(() => buildShoppingItems(weekDays), [weekDays]);
+  const shoppingItems = useMemo(() => buildShoppingItems(weekDays, family.servings), [weekDays, family.servings]);
 
   function prevMonth() {
     if (viewM === 0) { setViewY(y => y - 1); setViewM(11); }
@@ -203,6 +210,17 @@ export default function Page() {
     setViewM(date.getMonth());
     setSelectedDate(date);
     setShowShopping(false);
+  }
+
+  function openSettings() {
+    setFamilyInput(family);
+    setSettingsOpen(true);
+  }
+
+  function saveSettings() {
+    setFamily(familyInput);
+    saveFamilySettings(familyInput);
+    setSettingsOpen(false);
   }
 
   function swapMeal(key: string, mealId: string) {
@@ -222,14 +240,27 @@ export default function Page() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-base font-medium text-stone-800">献立カレンダー</h1>
-            <p className="text-xs text-stone-500">平日5日の夕飯、AIが考えます</p>
+            <p className="text-xs text-stone-500">
+              {family.servings}人家族{family.familyType === 'with_children' ? '（子供あり）' : ''}・平日夕飯
+            </p>
           </div>
-          <button
-            onClick={() => setShowShopping(s => !s)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-xs font-medium hover:bg-orange-200 transition-colors"
-          >
-            🛒 今週の買い物リスト
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={openSettings}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-stone-500 hover:bg-orange-100 transition-colors"
+              aria-label="家族設定"
+            >
+              <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setShowShopping(s => !s)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 text-xs font-medium hover:bg-orange-200 transition-colors"
+            >
+              🛒 今週の買い物リスト
+            </button>
+          </div>
         </div>
       </header>
 
@@ -315,7 +346,12 @@ export default function Page() {
                       <p className="text-xs text-stone-400">{date.getDate()}日</p>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-stone-800">{mainMeal.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium text-stone-800">{mainMeal.name}</p>
+                        {family.familyType === 'with_children' && !mainMeal.childFriendly && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-200">辛め</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                         <span className={`text-xs px-1.5 py-0.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
                           {cfg.label}
@@ -352,7 +388,7 @@ export default function Page() {
             <div className="px-5 py-4 border-b border-orange-100 flex items-center justify-between flex-shrink-0">
               <div>
                 <h3 className="text-sm font-medium text-stone-800">🛒 今週の買い物リスト</h3>
-                <p className="text-xs text-stone-400 mt-0.5">{SERVINGS}人分・調味料など常備品は除外済み</p>
+                <p className="text-xs text-stone-400 mt-0.5">{family.servings}人分・調味料など常備品は除外済み</p>
               </div>
               <button onClick={() => setShowShopping(false)} className="text-xs text-stone-400">閉じる</button>
             </div>
@@ -432,8 +468,82 @@ export default function Page() {
                 <p className="text-2xl font-bold text-orange-500 mt-0.5">
                   {detailTarget.totalCalories} <span className="text-sm font-normal text-stone-400">kcal</span>
                 </p>
-                <p className="text-xs text-stone-400 mt-1">{SERVINGS}人分の材料でお作りください</p>
+                <p className="text-xs text-stone-400 mt-1">{family.servings}人分の材料でお作りください</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 家族設定モーダル */}
+      {settingsOpen && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setSettingsOpen(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-orange-100">
+              <h3 className="text-sm font-medium text-stone-800">家族の設定</h3>
+            </div>
+            <div className="px-5 py-4 space-y-5">
+
+              {/* 人数 */}
+              <div>
+                <p className="text-xs font-medium text-stone-600 mb-2">何人家族ですか？</p>
+                <div className="flex gap-2">
+                  {[2, 3, 4, 5].map(n => (
+                    <button
+                      key={n}
+                      onClick={() => setFamilyInput(prev => ({ ...prev, servings: n }))}
+                      className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors
+                        ${familyInput.servings === n
+                          ? 'bg-orange-500 border-orange-500 text-white'
+                          : 'border-orange-200 text-stone-600 hover:bg-orange-50'}`}
+                    >
+                      {n}人
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 家族構成 */}
+              <div>
+                <p className="text-xs font-medium text-stone-600 mb-2">家族構成は？</p>
+                <div className="flex gap-2">
+                  {([
+                    { value: 'adults_only', label: '大人のみ' },
+                    { value: 'with_children', label: '子供あり' },
+                  ] as const).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setFamilyInput(prev => ({ ...prev, familyType: value }))}
+                      className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors
+                        ${familyInput.familyType === value
+                          ? 'bg-orange-500 border-orange-500 text-white'
+                          : 'border-orange-200 text-stone-600 hover:bg-orange-50'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {familyInput.familyType === 'with_children' && (
+                  <p className="mt-2 text-xs text-stone-400">
+                    子供向けでない料理（辛め）には「辛め」マークが表示されます
+                  </p>
+                )}
+              </div>
+
+            </div>
+            <div className="flex gap-2 px-5 pb-5">
+              <button
+                onClick={() => setSettingsOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-orange-200 text-sm text-stone-600 hover:bg-orange-50 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={saveSettings}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors"
+              >
+                保存
+              </button>
             </div>
           </div>
         </div>
@@ -459,7 +569,15 @@ export default function Page() {
                     className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-orange-50 transition-colors"
                   >
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-stone-800">{meal.name}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium text-stone-800">{meal.name}</p>
+                        {meal.childFriendly && family.familyType === 'with_children' && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-200">子供OK</span>
+                        )}
+                        {!meal.childFriendly && family.familyType === 'with_children' && (
+                          <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-50 text-red-500 border border-red-200">辛め</span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className={`text-xs px-1.5 py-0.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>
                           {cfg.label}

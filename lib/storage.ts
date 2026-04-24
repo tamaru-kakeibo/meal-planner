@@ -1,6 +1,23 @@
 const PLAN_KEY = 'meal-planner-plan-v1';
 const START_KEY = 'meal-planner-start';
 const SHOPPING_KEY = 'meal-planner-shopping-v1';
+const FAMILY_KEY = 'meal-planner-family-v1';
+
+import type { FamilySettings } from './meals';
+import { DEFAULT_FAMILY } from './meals';
+
+export function loadFamilySettings(): FamilySettings {
+  if (typeof window === 'undefined') return DEFAULT_FAMILY;
+  try {
+    const raw = localStorage.getItem(FAMILY_KEY);
+    return raw ? { ...DEFAULT_FAMILY, ...JSON.parse(raw) } : DEFAULT_FAMILY;
+  } catch { return DEFAULT_FAMILY; }
+}
+
+export function saveFamilySettings(settings: FamilySettings): void {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(FAMILY_KEY, JSON.stringify(settings)); } catch {}
+}
 
 /** key = "year-month-week-dow" → mealId */
 export function weekKey(year: number, month: number, week: number, dow: number): string {
