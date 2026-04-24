@@ -70,10 +70,14 @@ function getWeekDays(
   plan: Record<string, string>
 ): ResolvedDay[] {
   const result: ResolvedDay[] = [];
-  const dim = daysInMonth(year, month);
-  for (let d = 1; d <= dim; d++) {
-    const date = new Date(year, month, d);
-    if (getWeekOfMonth(date) !== week) continue;
+  // カレンダー行の先頭日を逆算（負の値や月超えはDateが自動処理）
+  const firstDow = new Date(year, month, 1).getDay();
+  const firstDayOfWeek = (week - 1) * 7 - firstDow + 1;
+  const startOfMonth = new Date(year, month, 1);
+
+  for (let offset = 0; offset < 7; offset++) {
+    const date = new Date(year, month, firstDayOfWeek + offset); // 月跨ぎを自動解決
+    if (date < startOfMonth) continue; // 前月の日は除外
     const dow = date.getDay();
     if (!WEEKDAYS.includes(dow)) continue;
     const key = weekKey(year, month, week, dow);
