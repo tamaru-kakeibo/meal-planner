@@ -2,6 +2,29 @@ const PLAN_KEY = 'meal-planner-plan-v1';
 const START_KEY = 'meal-planner-start';
 const SHOPPING_KEY = 'meal-planner-shopping-v1';
 const FAMILY_KEY = 'meal-planner-family-v1';
+const SKIPPED_DAYS_KEY = 'meal-planner-skipped-days-v1';
+
+/** スキップする日付の集合（"YYYY-MM-DD" 形式）を週ごとに保存 */
+export function loadSkippedDays(weekId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(SKIPPED_DAYS_KEY);
+    const all: Record<string, string[]> = raw ? JSON.parse(raw) : {};
+    return new Set(all[weekId] ?? []);
+  } catch { return new Set(); }
+}
+
+export function saveSkippedDays(weekId: string, skipped: Set<string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = localStorage.getItem(SKIPPED_DAYS_KEY);
+    const all: Record<string, string[]> = raw ? JSON.parse(raw) : {};
+    const keys = Object.keys(all);
+    if (keys.length > 8) keys.slice(0, keys.length - 8).forEach(k => delete all[k]);
+    all[weekId] = Array.from(skipped);
+    localStorage.setItem(SKIPPED_DAYS_KEY, JSON.stringify(all));
+  } catch {}
+}
 
 import type { FamilySettings } from './meals';
 import { DEFAULT_FAMILY } from './meals';

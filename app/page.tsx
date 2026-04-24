@@ -5,7 +5,7 @@ import {
   MEALS, SIDES, SOUPS, FRUITS, MONTHLY_PLAN, CATEGORY_CONFIG, STAPLES,
   Meal, Side, Soup, DayPlan, ShoppingItem, FamilySettings, DEFAULT_FAMILY, scaleAmount,
 } from '@/lib/meals';
-import { loadPlan, savePlan, weekKey, loadShoppingChecked, saveShoppingChecked, loadFamilySettings, saveFamilySettings } from '@/lib/storage';
+import { loadPlan, savePlan, weekKey, loadShoppingChecked, saveShoppingChecked, loadFamilySettings, saveFamilySettings, loadSkippedDays, saveSkippedDays } from '@/lib/storage';
 
 const MONTH_JP = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
 const DOW_JP   = ['日','月','火','水','木','金','土'];
@@ -16,6 +16,10 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() &&
          a.getMonth()    === b.getMonth()    &&
          a.getDate()     === b.getDate();
+}
+
+function toDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function daysInMonth(y: number, m: number) {
@@ -173,6 +177,7 @@ export default function Page() {
   const [family, setFamily] = useState<FamilySettings>(DEFAULT_FAMILY);
   const [familyInput, setFamilyInput] = useState<FamilySettings>(DEFAULT_FAMILY);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [skippedDates, setSkippedDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setPlan(loadPlan());
@@ -194,7 +199,45 @@ export default function Page() {
     [viewY, viewM, selectedWeek, plan]
   );
 
-  const shoppingItems = useMemo(() => buildShoppingItems(weekDays, family.servings), [weekDays, family.servings]);
+  // 週が変わったらスキップ日を初期化（今週は過去の日を自動スキップ）
+  useEffect(() => {
+    const saved = loadSkippedDays(shoppingWeekId);
+    if (saved.size > 0) {
+      setSkippedDates(saved);
+      return;
+    }
+    const isCurrentWeek =
+      viewY === today.getFullYear() &&
+      viewM === today.getMonth() &&
+      selectedWeek === getWeekOfMonth(today);
+    if (isCurrentWeek) {
+      const auto = new Set(
+        weekDays
+          .filter(d => d.date < today && !sameDay(d.date, today))
+          .map(d => toDateStr(d.date))
+      );
+      setSkippedDates(auto);
+    } else {
+      setSkippedDates(new Set());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shoppingWeekId]);
+
+  const shoppingDays = useMemo(
+    () => weekDays.filter(d => !skippedDates.has(toDateStr(d.date))),
+    [weekDays, skippedDates]
+  );
+
+  const shoppingItems = useMemo(() => buildShoppingItems(shoppingDays, family.servings), [shoppingDays, family.servings]);
+
+  function toggleShoppingDay(dateStr: string) {
+    setSkippedDates(prev => {
+      const next = new Set(prev);
+      if (next.has(dateStr)) next.delete(dateStr); else next.add(dateStr);
+      saveSkippedDays(shoppingWeekId, next);
+      return next;
+    });
+  }
 
   function prevMonth() {
     if (viewM === 0) { setViewY(y => y - 1); setViewM(11); }
@@ -384,13 +427,36 @@ export default function Page() {
       {/* 買い物リストモーダル */}
       {showShopping && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end justify-center p-4" onClick={() => setShowShopping(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-orange-100 flex items-center justify-between flex-shrink-0">
-              <div>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm max-h-[75vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="px-5 pt-4 pb-3 border-b border-orange-100 flex-shrink-0">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-stone-800">🛒 今週の買い物リスト</h3>
-                <p className="text-xs text-stone-400 mt-0.5">{family.servings}人分・調味料など常備品は除外済み</p>
+                <button onClick={() => setShowShopping(false)} className="text-xs text-stone-400">閉じる</button>
               </div>
-              <button onClick={() => setShowShopping(false)} className="text-xs text-stone-400">閉じる</button>
+              {/* 曜日トグル */}
+              <div className="flex gap-1.5">
+                {weekDays.map(d => {
+                  const ds = toDateStr(d.date);
+                  const included = !skippedDates.has(ds);
+                  const isPast = d.date < today && !sameDay(d.date, today);
+                  return (
+                    <button
+                      key={ds}
+                      onClick={() => toggleShoppingDay(ds)}
+                      className={`flex-1 flex flex-col items-center py-1.5 rounded-xl border text-xs font-medium transition-colors
+                        ${included
+                          ? 'bg-orange-500 border-orange-500 text-white'
+                          : 'border-stone-200 text-stone-400 bg-stone-50'}`}
+                    >
+                      <span>{DOW_JP[d.dow]}曜</span>
+                      <span className={`text-[10px] mt-0.5 ${included ? 'text-orange-100' : 'text-stone-300'}`}>
+                        {d.date.getDate()}日{isPast ? '(済)' : ''}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-stone-400 mt-2">{family.servings}人分・調味料など常備品は除外済み</p>
             </div>
             <div className="overflow-y-auto flex-1 px-5 py-3 space-y-2.5">
               {shoppingItems.length === 0 ? (
