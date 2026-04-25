@@ -601,15 +601,15 @@ export default function Page() {
               </div>
             </div>
             <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
-              <MealSection meal={detailTarget.mainMeal} />
+              <MealSection meal={detailTarget.mainMeal} servings={family.servings} />
 
               {detailTarget.dayPlan.sides.map(sid => {
                 const side = SIDES[sid];
-                return side ? <SideSection key={sid} side={side} /> : null;
+                return side ? <SideSection key={sid} side={side} servings={family.servings} /> : null;
               })}
 
               {detailTarget.dayPlan.soup && SOUPS[detailTarget.dayPlan.soup] && (
-                <SoupSection soup={SOUPS[detailTarget.dayPlan.soup!]} />
+                <SoupSection soup={SOUPS[detailTarget.dayPlan.soup!]} servings={family.servings} />
               )}
 
               {detailTarget.dayPlan.fruit && FRUITS[detailTarget.dayPlan.fruit] && (() => {
@@ -787,7 +787,23 @@ function ShoppingBadges({ items }: { items: ShoppingItem[] }) {
   );
 }
 
-function MealSection({ meal }: { meal: Meal }) {
+function CondimentBadges({ items, servings }: { items: ShoppingItem[]; servings: number }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mb-2">
+      <p className="text-[11px] font-semibold text-stone-400 mb-1">調味料の目安</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map(c => (
+          <span key={c.name} className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-2 py-0.5 text-stone-700">
+            {c.name}　{scaleAmount(c.amount, servings)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MealSection({ meal, servings }: { meal: Meal; servings: number }) {
   const cfg = CATEGORY_CONFIG[meal.category];
   return (
     <div>
@@ -798,6 +814,7 @@ function MealSection({ meal }: { meal: Meal }) {
       </div>
       <p className="text-xs text-stone-400 mb-2">約{meal.cookingMinutes}分・{meal.calories}kcal</p>
       <ShoppingBadges items={meal.shopping} />
+      <CondimentBadges items={meal.condiments} servings={servings} />
       <p className="text-[11px] font-semibold text-stone-400 mb-0.5">作り方</p>
       <StepList steps={meal.steps} />
       {meal.tip && (
@@ -807,25 +824,27 @@ function MealSection({ meal }: { meal: Meal }) {
   );
 }
 
-function SideSection({ side }: { side: Side }) {
+function SideSection({ side, servings }: { side: Side; servings: number }) {
   return (
     <div>
       <p className="text-[11px] font-semibold text-stone-400 tracking-wide mb-1">🥗 副菜</p>
       <p className="text-sm font-semibold text-stone-800 mb-0.5">{side.name}</p>
       <p className="text-xs text-stone-400 mb-2">{side.calories}kcal</p>
       <ShoppingBadges items={side.shopping} />
+      <CondimentBadges items={side.condiments} servings={servings} />
       <StepList steps={side.steps} />
     </div>
   );
 }
 
-function SoupSection({ soup }: { soup: Soup }) {
+function SoupSection({ soup, servings }: { soup: Soup; servings: number }) {
   return (
     <div>
       <p className="text-[11px] font-semibold text-stone-400 tracking-wide mb-1">🍵 汁物</p>
       <p className="text-sm font-semibold text-stone-800 mb-0.5">{soup.name}</p>
       <p className="text-xs text-stone-400 mb-2">{soup.calories}kcal</p>
       <ShoppingBadges items={soup.shopping} />
+      <CondimentBadges items={soup.condiments} servings={servings} />
       <StepList steps={soup.steps} />
     </div>
   );
