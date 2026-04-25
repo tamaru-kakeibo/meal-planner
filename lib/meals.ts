@@ -32,9 +32,15 @@ export function scaleAmount(amount: string, toServings: number): string {
   const unit = m[3].trim();
   const scaled = num * ratio;
 
-  // 整数が自然な単位はceil
+  // 整数・分数で買う単位
   const wholeUnits = new Set(['切れ', '個', '枚', '束', '袋', '缶', '丁', '箱', 'かけ', '本']);
   if (wholeUnits.has(unit)) {
+    if (scaled < 1) {
+      // 1個未満は 1/4 刻みで切り上げ（例: 0.33→1/2, 0.6→3/4）
+      const quarters = Math.ceil(scaled * 4);
+      const fracMap: Record<number, string> = { 1: '1/4', 2: '1/2', 3: '3/4', 4: '1' };
+      return `${fracMap[quarters] ?? '1'}${unit}`;
+    }
     return `${Math.ceil(scaled)}${unit}`;
   }
 
