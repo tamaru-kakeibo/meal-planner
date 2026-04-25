@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import {
   MEALS, SIDES, SOUPS, FRUITS, MONTHLY_PLAN, CATEGORY_CONFIG, STAPLES,
   Meal, Side, Soup, DayPlan, ShoppingItem, FamilySettings, DEFAULT_FAMILY, scaleAmount,
+  MealCategory, SideCategory,
 } from '@/lib/meals';
 import { loadPlan, savePlan, weekKey, loadShoppingChecked, saveShoppingChecked, loadFamilySettings, saveFamilySettings, loadSkippedDays, saveSkippedDays } from '@/lib/storage';
 
@@ -234,6 +235,30 @@ export default function Page() {
 
   const shoppingItems = useMemo(() => buildShoppingItems(shoppingDays, family.servings), [shoppingDays, family.servings]);
 
+  // 週間栄養バランスの集計
+  const weekBalance = useMemo(() => {
+    const protein: Partial<Record<MealCategory, number>> = {};
+    const sides: Partial<Record<SideCategory, number>> = {};
+    for (const { mainMeal, dayPlan } of weekDays) {
+      protein[mainMeal.category] = (protein[mainMeal.category] ?? 0) + 1;
+      for (const sid of dayPlan.sides) {
+        const s = SIDES[sid];
+        if (s) sides[s.category] = (sides[s.category] ?? 0) + 1;
+      }
+    }
+    const fishDays = protein['fish'] ?? 0;
+    const vegDays  = sides['vegetable'] ?? 0;
+    const seaweed  = sides['seaweed'] ?? 0;
+    const proteinTypes = Object.keys(protein).length;
+    const tips: string[] = [];
+    if (fishDays === 0) tips.push('今週は魚がありません。1〜2回入れると◎');
+    else if (fishDays === 1) tips.push('魚をもう1回入れるとさらにバランスUP');
+    if (vegDays < 3) tips.push('野菜の副菜をもう少し増やせると理想的です');
+    if (seaweed === 0) tips.push('海藻（ひじき・わかめ）が入ると栄養バランスが整います');
+    if (proteinTypes >= 4 && fishDays >= 2 && vegDays >= 3) tips.push('今週はバランス良好です！');
+    return { protein, sides, fishDays, vegDays, seaweed, proteinTypes, tips };
+  }, [weekDays]);
+
   function toggleShoppingDay(dateStr: string) {
     setSkippedDates(prev => {
       const next = new Set(prev);
@@ -426,6 +451,71 @@ export default function Page() {
             </div>
           )}
         </div>
+
+        {/* 週間栄養バランス */}
+        {weekDays.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-orange-200 overflow-hidden">
+            <div className="px-4 py-3 border-b border-orange-100">
+              <h3 className="text-sm font-medium text-stone-800">今週のバランス</h3>
+            </div>
+            <div className="px-4 py-3 space-y-3">
+
+              {/* タンパク質 */}
+              <div>
+                <p className="text-xs text-stone-400 mb-2">🥩 タンパク質</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {([
+                    ['fish',    '魚',     'bg-sky-100 text-sky-700 border-sky-200'],
+                    ['chicken', '鶏肉',   'bg-amber-100 text-amber-700 border-amber-200'],
+                    ['pork',    '豚肉',   'bg-rose-100 text-rose-700 border-rose-200'],
+                    ['beef',    '牛肉',   'bg-red-100 text-red-700 border-red-200'],
+                    ['egg',     '卵・豆腐','bg-yellow-100 text-yellow-700 border-yellow-200'],
+                    ['other',   'その他', 'bg-emerald-100 text-emerald-700 border-emerald-200'],
+                  ] as [MealCategory, string, string][]).map(([cat, label, cls]) => {
+                    const count = weekBalance.protein[cat] ?? 0;
+                    if (count === 0) return null;
+                    return (
+                      <span key={cat} className={`text-xs px-2 py-1 rounded-full border font-medium ${cls}`}>
+                        {label} {'●'.repeat(count)}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 副菜 */}
+              <div>
+                <p className="text-xs text-stone-400 mb-2">🥗 副菜の種類</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {([
+                    ['vegetable', '野菜系',   'bg-green-100 text-green-700 border-green-200'],
+                    ['seaweed',   '海藻類',   'bg-teal-100 text-teal-700 border-teal-200'],
+                    ['tofu',      '豆腐系',   'bg-orange-100 text-orange-700 border-orange-200'],
+                    ['other',     'その他副菜','bg-stone-100 text-stone-600 border-stone-200'],
+                  ] as [SideCategory, string, string][]).map(([cat, label, cls]) => {
+                    const count = weekBalance.sides[cat] ?? 0;
+                    if (count === 0) return null;
+                    return (
+                      <span key={cat} className={`text-xs px-2 py-1 rounded-full border font-medium ${cls}`}>
+                        {label} {'●'.repeat(count)}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* アドバイス */}
+              <div className={`rounded-xl px-3 py-2.5 ${weekBalance.tips[0]?.includes('良好') ? 'bg-green-50' : 'bg-orange-50'}`}>
+                {weekBalance.tips.map((tip, i) => (
+                  <p key={i} className={`text-xs leading-relaxed ${weekBalance.tips[0]?.includes('良好') ? 'text-green-700' : 'text-stone-600'}`}>
+                    {weekBalance.tips[0]?.includes('良好') ? '✅ ' : i === 0 ? '💡 ' : '　・'}{tip}
+                  </p>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 買い物リストモーダル */}
