@@ -81,7 +81,7 @@ export const STAPLES = new Set([
   'ごはん', '米', '塩', '醤油', 'みりん', '酒', '砂糖', '味噌',
   '油', 'ごま油', 'オリーブオイル', '酢', 'だし', 'こんぶ', 'かつおぶし',
   '薄力粉', 'パン粉', '片栗粉', '塩こしょう', '牛乳', 'バター',
-  'ケチャップ', 'ウスターソース', 'マヨネーズ', '白ごま', 'コンソメ',
+  'ケチャップ', 'ウスターソース', 'マヨネーズ', '白ごま', 'コンソメ', 'ポン酢',
 ]);
 
 export interface ShoppingItem {
@@ -445,6 +445,88 @@ export const MEALS: Record<string, Meal> = {
     ],
     tip: '野菜がやわらかく高齢者にも食べやすい。',
   },
+  c6: {
+    id: 'c6', name: 'チキンカレー', category: 'chicken', cookingMinutes: 30, calories: 480, childFriendly: true,
+    shopping: [{ name: '鶏もも肉', amount: '350g' }, { name: 'じゃがいも', amount: '3個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '2個' }, { name: 'カレールー', amount: '1箱' }],
+    condiments: [{ name: '水', amount: '800ml' }],
+    steps: [
+      '鶏肉を一口大に切り、野菜も同様に切る',
+      '油で鶏肉を炒め色が変わったら野菜を加えてさらに炒める',
+      '水800mlを加えて野菜がやわらかくなるまで15分煮る',
+      '一度火を止めてルーを割り入れて溶かし、弱火で10分煮込む',
+    ],
+    tip: '鶏肉はやわらかく煮えるので高齢者にも食べやすい。翌日も美味しい。',
+  },
+  c7: {
+    id: 'c7', name: '鶏のから揚げ', category: 'chicken', cookingMinutes: 25, calories: 350, childFriendly: true,
+    shopping: [{ name: '鶏もも肉', amount: '400g' }, { name: 'にんにく', amount: '1かけ' }, { name: 'しょうが', amount: '1かけ' }],
+    condiments: [
+      { name: '醤油', amount: '大さじ2' }, { name: '酒', amount: '大さじ1' },
+      { name: 'ごま油', amount: '小さじ1' }, { name: '片栗粉', amount: '大さじ4' },
+    ],
+    steps: [
+      '鶏肉を一口大に切り、醤油大さじ2・酒大さじ1・ごま油小さじ1・にんにく&しょうがすりおろしをもみ込んで15分漬ける',
+      '片栗粉大さじ4をまぶして170℃の油で4〜5分揚げる',
+      '一度取り出して2分休ませ、180℃で1分二度揚げするとカリッと仕上がる',
+    ],
+    tip: '二度揚げで外カリ中ジューシーに。子どもに大人気。',
+  },
+  p5: {
+    id: 'p5', name: '回鍋肉', category: 'pork', cookingMinutes: 20, calories: 290, childFriendly: true,
+    shopping: [{ name: '豚バラ肉', amount: '300g' }, { name: 'キャベツ', amount: '1/4個' }, { name: 'ピーマン', amount: '2個' }, { name: 'にんにく', amount: '1かけ' }, { name: 'しょうが', amount: '1かけ' }],
+    condiments: [
+      { name: '味噌', amount: '大さじ2' }, { name: '醤油', amount: '小さじ1' },
+      { name: 'みりん', amount: '大さじ1' }, { name: '酒', amount: '大さじ1' },
+      { name: '砂糖', amount: '小さじ1' },
+    ],
+    steps: [
+      '豚バラを食べやすく切り、キャベツはざく切り、ピーマンは乱切りにする',
+      'にんにく・しょうがをみじん切りにして油で炒め、豚肉を加えてしっかり炒める',
+      '野菜を加えて炒め、味噌大さじ2・醤油小さじ1・みりん大さじ1・酒大さじ1・砂糖小さじ1を合わせたタレで炒め合わせる',
+    ],
+    tip: '豆板醤を少量加えると本格的な辛みが出る。辛いのが苦手な方はなしでもOK。',
+  },
+  p6: {
+    id: 'p6', name: '豚肉のポン酢炒め', category: 'pork', cookingMinutes: 15, calories: 260, childFriendly: true,
+    shopping: [{ name: '豚こま肉', amount: '300g' }, { name: '玉ねぎ', amount: '1個' }, { name: 'もやし', amount: '1袋' }],
+    condiments: [
+      { name: 'ポン酢', amount: '大さじ3' }, { name: 'ごま油', amount: '小さじ1' },
+    ],
+    steps: [
+      '玉ねぎを薄切りにする',
+      'ごま油小さじ1で豚肉を炒め、玉ねぎ・もやしを加えてしんなりするまで炒める',
+      '全体に火が通ったらポン酢大さじ3を回しかけ、手早く炒め合わせる',
+    ],
+    tip: 'ポン酢のさっぱり味で食欲がない日にもおすすめ。',
+  },
+  o5: {
+    id: 'o5', name: 'ドライカレー', category: 'other', cookingMinutes: 25, calories: 420, childFriendly: true,
+    shopping: [{ name: '合いびき肉', amount: '300g' }, { name: '玉ねぎ', amount: '2個' }, { name: 'にんじん', amount: '1/2本' }, { name: 'にんにく', amount: '1かけ' }, { name: 'カレー粉', amount: '大さじ1.5' }],
+    condiments: [
+      { name: 'ケチャップ', amount: '大さじ2' }, { name: 'ウスターソース', amount: '大さじ1' },
+      { name: '塩こしょう', amount: '少量' },
+    ],
+    steps: [
+      '玉ねぎ・にんじん・にんにくをみじん切りにする',
+      '油でにんにくを炒めて香りを出し、玉ねぎが透き通るまで5〜7分炒める',
+      'ひき肉・にんじんを加えて炒め、カレー粉大さじ1.5・ケチャップ大さじ2・ウスターソース大さじ1・塩こしょうで味付けし水分が飛ぶまで炒める',
+    ],
+    tip: '多めに作って冷凍できる。ごはんにかけてもパンに挟んでもOK。',
+  },
+  o6: {
+    id: 'o6', name: 'スパゲッティミートソース', category: 'other', cookingMinutes: 30, calories: 450, childFriendly: true,
+    shopping: [{ name: '合いびき肉', amount: '300g' }, { name: '玉ねぎ', amount: '1個' }, { name: 'トマト缶', amount: '1缶' }, { name: 'スパゲッティ', amount: '300g' }],
+    condiments: [
+      { name: 'コンソメ', amount: '小さじ1' }, { name: 'ケチャップ', amount: '大さじ2' },
+      { name: 'ウスターソース', amount: '大さじ1' }, { name: '塩こしょう', amount: '少量' },
+    ],
+    steps: [
+      '玉ねぎをみじん切りにして油で炒め、ひき肉を加えてよく炒める',
+      'トマト缶・コンソメ小さじ1・ケチャップ大さじ2・ウスターソース大さじ1を加えて弱火で15分煮込み、塩こしょうで調整する',
+      'スパゲッティを袋の表示通りに茹でてミートソースをかける',
+    ],
+    tip: 'ソースは多めに作って冷凍しておくと便利。子どもに大人気。',
+  },
 };
 
 // ─── 副菜 ─────────────────────────────────────────────────────────────────────
@@ -636,8 +718,8 @@ export const MONTHLY_PLAN: DayPlan[][] = [
   // 第2週
   [
     { main: 'f2', sides: ['s8', 's7'], soup: 'sp1' },
-    { main: 'c2', sides: ['s1', 's10'] },
-    { main: 'p2', sides: ['s9'], soup: 'sp3' },
+    { main: 'c7', sides: ['s1', 's10'] },           // 鶏のから揚げ
+    { main: 'p6', sides: ['s9'], soup: 'sp3' },     // 豚肉のポン酢炒め
     { main: 'b2', sides: ['s4', 's6'] },
     { main: 'e2', sides: ['s2', 's10'], soup: 'sp2', fruit: 'fr2' },
   ],
@@ -645,16 +727,16 @@ export const MONTHLY_PLAN: DayPlan[][] = [
   [
     { main: 'f3', sides: ['s5', 's7'], soup: 'sp4' },
     { main: 'c3', sides: ['s1'] },
-    { main: 'p3', sides: ['s10', 's6'], soup: 'sp1' },
-    { main: 'o1', sides: ['s9', 's2'] },
+    { main: 'p5', sides: ['s10', 's6'], soup: 'sp1' }, // 回鍋肉
+    { main: 'o6', sides: ['s9', 's2'] },               // ミートソース
     { main: 'e3', sides: ['s3'], soup: 'sp5', fruit: 'fr5' },
   ],
   // 第4週
   [
     { main: 'f5', sides: ['s8', 's10'], soup: 'sp2' },
-    { main: 'c4', sides: ['s2', 's7'] },
+    { main: 'c6', sides: ['s2', 's7'] },            // チキンカレー
     { main: 'p4', sides: ['s5', 's1'], soup: 'sp3' },
-    { main: 'o3', sides: ['s6'] },
+    { main: 'o5', sides: ['s6'] },                  // ドライカレー
     { main: 'o2', sides: ['s4', 's9'], soup: 'sp1', fruit: 'fr1' },
   ],
 ];
