@@ -61,10 +61,13 @@ export function scaleAmount(amount: string, toServings: number): string {
     return `${Math.ceil(scaled)}${unit}`;
   }
 
-  // g / ml は10単位に丸める
+  // g / ml の丸め：50以上は10刻み、それ未満は1刻み（小量が0になるのを防ぐ）
   if (unit === 'g' || unit === 'ml') {
-    const rounded = Math.round(scaled / 10) * 10;
-    return `${rounded}${unit}`;
+    if (scaled >= 50) {
+      const rounded = Math.round(scaled / 10) * 10;
+      return `${rounded}${unit}`;
+    }
+    return `${Math.round(scaled)}${unit}`;
   }
 
   // その他は0.5刻み
