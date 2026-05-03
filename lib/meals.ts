@@ -309,7 +309,7 @@ export const MEALS: Record<string, Meal> = {
   },
   p4: {
     id: 'p4', name: '豚汁定食', category: 'pork', cookingMinutes: 20, calories: 250, childFriendly: true,
-    shopping: [{ name: '豚こま肉', amount: '200g' }, { name: 'だいこん', amount: '1/3本' }, { name: 'にんじん', amount: '1本' }, { name: 'ごぼう', amount: '1/2本' }, { name: '豆腐', amount: '1丁' }],
+    shopping: [{ name: '豚こま肉', amount: '200g' }, { name: 'だいこん', amount: '1/3本' }, { name: 'にんじん', amount: '1本' }, { name: 'ごぼう', amount: '1/2本' }, { name: '木綿豆腐', amount: '1丁' }],
     condiments: [
       { name: '水', amount: '700ml' }, { name: 'だし', amount: '小さじ1' },
       { name: '味噌', amount: '大さじ3' }, { name: 'ごま油', amount: '小さじ1' },
@@ -539,27 +539,27 @@ export const SIDES: Record<string, Side> = {
 export const SOUPS: Record<string, Soup> = {
   sp1: {
     id: 'sp1', name: 'わかめと豆腐の味噌汁', category: 'miso', calories: 40,
-    shopping: [{ name: 'わかめ（乾燥）', amount: '5g' }, { name: '豆腐', amount: '1/2丁' }],
+    shopping: [{ name: 'わかめ（乾燥）', amount: '5g' }, { name: '絹豆腐', amount: '1/2丁' }],
     condiments: [
       { name: '水', amount: '600ml' }, { name: 'だし', amount: '小さじ1' },
       { name: '味噌', amount: '大さじ2' },
     ],
     steps: [
       '水600mlにだし小さじ1を溶かして鍋で沸かす',
-      '豆腐を1cm角に切って加え、水で戻したわかめも入れる',
+      '絹豆腐を1cm角に切って加え、水で戻したわかめも入れる',
       '火を弱めて味噌大さじ2を溶かし入れ、沸騰直前で火を止める',
     ],
   },
   sp2: {
     id: 'sp2', name: 'なめこの味噌汁', category: 'miso', calories: 35,
-    shopping: [{ name: 'なめこ', amount: '1袋' }, { name: '豆腐', amount: '1/2丁' }],
+    shopping: [{ name: 'なめこ', amount: '1袋' }, { name: '絹豆腐', amount: '1/2丁' }],
     condiments: [
       { name: '水', amount: '600ml' }, { name: 'だし', amount: '小さじ1' },
       { name: '味噌', amount: '大さじ2' },
     ],
     steps: [
       '水600mlにだし小さじ1を溶かして鍋で沸かす',
-      'なめこを軽く洗って加え、豆腐を1cm角に切って入れる',
+      'なめこを軽く洗って加え、絹豆腐を1cm角に切って入れる',
       '火を弱めて味噌大さじ2を溶かし入れ、ねぎを散らす',
     ],
   },
