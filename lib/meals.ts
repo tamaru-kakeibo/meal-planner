@@ -425,10 +425,10 @@ export const MEALS: Record<string, Meal> = {
   },
   o3: {
     id: 'o3', name: 'カレーライス', category: 'other', cookingMinutes: 30, calories: 500, childFriendly: true,
-    shopping: [{ name: '鶏もも肉', amount: '350g' }, { name: 'じゃがいも', amount: '3個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '2個' }, { name: 'カレールー', amount: '1箱' }],
+    shopping: [{ name: '牛こま肉（または豚こま肉）', amount: '350g' }, { name: 'じゃがいも', amount: '3個' }, { name: 'にんじん', amount: '1本' }, { name: '玉ねぎ', amount: '2個' }, { name: 'カレールー', amount: '1箱' }],
     condiments: [{ name: '水', amount: '800ml' }],
     steps: [
-      '野菜と鶏肉を一口大に切り、油で炒める',
+      '野菜と肉を一口大に切り、油で炒める',
       '水800mlを加えて野菜がやわらかくなるまで15分煮る',
       '一度火を止めてルーを割り入れて溶かし、弱火で10分煮込む',
     ],
