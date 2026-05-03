@@ -774,13 +774,13 @@ function StepList({ steps }: { steps: string[] }) {
   );
 }
 
-function ShoppingBadges({ items }: { items: ShoppingItem[] }) {
+function ShoppingBadges({ items, servings }: { items: ShoppingItem[]; servings: number }) {
   if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5 mt-1 mb-2">
       {items.map(s => (
         <span key={s.name} className="text-xs bg-orange-50 border border-orange-200 rounded-lg px-2 py-0.5 text-stone-700">
-          {s.name}　{s.amount}
+          {s.name}　{scaleAmount(s.amount, servings)}
         </span>
       ))}
     </div>
@@ -813,7 +813,7 @@ function MealSection({ meal, servings }: { meal: Meal; servings: number }) {
         <span className={`text-xs px-1.5 py-0.5 rounded-full border ${cfg.bg} ${cfg.text} ${cfg.border}`}>{cfg.label}</span>
       </div>
       <p className="text-xs text-stone-400 mb-2">約{meal.cookingMinutes}分・{meal.calories}kcal</p>
-      <ShoppingBadges items={meal.shopping} />
+      <ShoppingBadges items={meal.shopping} servings={servings} />
       <CondimentBadges items={meal.condiments} servings={servings} />
       <p className="text-[11px] font-semibold text-stone-400 mb-0.5">作り方</p>
       <StepList steps={meal.steps} />
@@ -830,7 +830,7 @@ function SideSection({ side, servings }: { side: Side; servings: number }) {
       <p className="text-[11px] font-semibold text-stone-400 tracking-wide mb-1">🥗 副菜</p>
       <p className="text-sm font-semibold text-stone-800 mb-0.5">{side.name}</p>
       <p className="text-xs text-stone-400 mb-2">{side.calories}kcal</p>
-      <ShoppingBadges items={side.shopping} />
+      <ShoppingBadges items={side.shopping} servings={servings} />
       <CondimentBadges items={side.condiments} servings={servings} />
       <StepList steps={side.steps} />
     </div>
@@ -843,7 +843,7 @@ function SoupSection({ soup, servings }: { soup: Soup; servings: number }) {
       <p className="text-[11px] font-semibold text-stone-400 tracking-wide mb-1">🍵 汁物</p>
       <p className="text-sm font-semibold text-stone-800 mb-0.5">{soup.name}</p>
       <p className="text-xs text-stone-400 mb-2">{soup.calories}kcal</p>
-      <ShoppingBadges items={soup.shopping} />
+      <ShoppingBadges items={soup.shopping} servings={servings} />
       <CondimentBadges items={soup.condiments} servings={servings} />
       <StepList steps={soup.steps} />
     </div>
