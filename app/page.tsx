@@ -759,7 +759,22 @@ export default function Page() {
 
 // ─── 詳細表示コンポーネント ────────────────────────────────────────────────────
 
-function StepList({ steps }: { steps: string[] }) {
+/** ステップ内の {{食材名}} を人数スケール済みの分量に置換する */
+function renderStep(step: string, shopping: ShoppingItem[], condiments: ShoppingItem[], servings: number): string {
+  const all = [...shopping, ...condiments];
+  return step.replace(/\{\{([^}]+)\}\}/g, (_, name: string) => {
+    const found = all.find(item => item.name === name);
+    if (!found) return name;
+    return scaleAmount(found.amount, servings);
+  });
+}
+
+function StepList({ steps, shopping = [], condiments = [], servings = 3 }: {
+  steps: string[];
+  shopping?: ShoppingItem[];
+  condiments?: ShoppingItem[];
+  servings?: number;
+}) {
   return (
     <ol className="space-y-1.5 mt-1">
       {steps.map((step, i) => (
@@ -767,7 +782,7 @@ function StepList({ steps }: { steps: string[] }) {
           <span className="w-4 h-4 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center flex-shrink-0 text-[10px] font-medium">
             {i + 1}
           </span>
-          <span className="leading-relaxed">{step}</span>
+          <span className="leading-relaxed">{renderStep(step, shopping, condiments, servings)}</span>
         </li>
       ))}
     </ol>
@@ -816,12 +831,7 @@ function MealSection({ meal, servings }: { meal: Meal; servings: number }) {
       <ShoppingBadges items={meal.shopping} servings={servings} />
       <CondimentBadges items={meal.condiments} servings={servings} />
       <p className="text-[11px] font-semibold text-stone-400 mb-0.5">作り方</p>
-      {servings !== 3 && (
-        <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 mb-1.5">
-          ⚠️ 手順内の分量は3人分です。実際の分量は↑「調味料の目安」を参照してください
-        </p>
-      )}
-      <StepList steps={meal.steps} />
+      <StepList steps={meal.steps} shopping={meal.shopping} condiments={meal.condiments} servings={servings} />
       {meal.tip && (
         <p className="mt-2 text-xs text-stone-400 bg-amber-50 rounded-lg px-2 py-1.5">💡 {meal.tip}</p>
       )}
@@ -837,12 +847,7 @@ function SideSection({ side, servings }: { side: Side; servings: number }) {
       <p className="text-xs text-stone-400 mb-2">{side.calories}kcal</p>
       <ShoppingBadges items={side.shopping} servings={servings} />
       <CondimentBadges items={side.condiments} servings={servings} />
-      {servings !== 3 && side.condiments.length > 0 && (
-        <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 mb-1.5">
-          ⚠️ 手順内の分量は3人分です。実際の分量は↑「調味料の目安」を参照してください
-        </p>
-      )}
-      <StepList steps={side.steps} />
+      <StepList steps={side.steps} shopping={side.shopping} condiments={side.condiments} servings={servings} />
     </div>
   );
 }
@@ -855,12 +860,7 @@ function SoupSection({ soup, servings }: { soup: Soup; servings: number }) {
       <p className="text-xs text-stone-400 mb-2">{soup.calories}kcal</p>
       <ShoppingBadges items={soup.shopping} servings={servings} />
       <CondimentBadges items={soup.condiments} servings={servings} />
-      {servings !== 3 && soup.condiments.length > 0 && (
-        <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1 mb-1.5">
-          ⚠️ 手順内の分量は3人分です。実際の分量は↑「調味料の目安」を参照してください
-        </p>
-      )}
-      <StepList steps={soup.steps} />
+      <StepList steps={soup.steps} shopping={soup.shopping} condiments={soup.condiments} servings={servings} />
     </div>
   );
 }
